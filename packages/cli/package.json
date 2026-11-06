@@ -1,0 +1,73 @@
+{
+  "name": "brandrail",
+  "version": "0.10.1",
+  "mcpName": "au.com.brandrail/brandrail",
+  "description": "Keep AI-generated UI on-brand: an MCP server and CLI that give Claude Code, Cursor, Copilot and Codex your design system, and check code and live pages against it.",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "design-system",
+    "design-tokens",
+    "dtcg",
+    "ui-components",
+    "lint",
+    "linter",
+    "ai",
+    "claude",
+    "claude-code",
+    "cursor",
+    "copilot",
+    "codex",
+    "windsurf",
+    "figma",
+    "tailwind",
+    "react",
+    "angular",
+    "vue",
+    "web-components",
+    "brand"
+  ],
+  "homepage": "https://www.brandrail.com.au/docs",
+  "bugs": {
+    "url": "https://github.com/brandrail-app/brandrail/issues",
+    "email": "hello@brandrail.com.au"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brandrail-app/brandrail.git",
+    "directory": "packages/cli"
+  },
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "brandrail": "dist/brandrail.mjs"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --format=esm --outfile=dist/brandrail.mjs --external:playwright --external:playwright-core --banner:js='#!/usr/bin/env node' && chmod +x dist/brandrail.mjs",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build"
+  },
+  "devDependencies": {
+    "@brandrail/engine": "workspace:*",
+    "@brandrail/mcp": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@types/node": "^22",
+    "esbuild": "^0.28.2",
+    "fflate": "0.8.3",
+    "playwright-core": "1.63.0",
+    "typescript": "5.9.3",
+    "zod": "4.6.7"
+  }
+}

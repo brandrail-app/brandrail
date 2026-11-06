@@ -1,0 +1,8 @@
+---
+description: Use the Brandrail design system when writing or changing UI
+alwaysApply: false
+globs: ["**/*.tsx", "**/*.jsx", "**/*.vue", "**/*.svelte", "**/*.html", "**/*.css", "**/*.scss", "**/*.php", "**/*.twig"]
+---
+Before writing UI, call the Brandrail `get_guidelines` tool once, then `find_component` for each element and `get_design_tokens` for colours, spacing and radius. Never hard-code colours or import another UI library.
+
+After writing UI, call `validate_snippet` with every changed file and fix each error and warning before finishing.

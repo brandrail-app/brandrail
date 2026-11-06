@@ -1,0 +1,15 @@
+{
+  "name": "brandrail",
+  "displayName": "Brandrail",
+  "description": "Your design system in Cursor: tokens, components and a brand checker the agent calls before and after it writes UI. Runs locally.",
+  "version": "0.10.1",
+  "author": {
+    "name": "Brandrail",
+    "email": "hello@brandrail.com.au",
+    "url": "https://www.brandrail.com.au"
+  },
+  "homepage": "https://www.brandrail.com.au/docs/connect",
+  "repository": "https://github.com/brandrail-app/brandrail",
+  "license": "MIT",
+  "keywords": ["design-system", "design-tokens", "frontend", "linter", "mcp"]
+}

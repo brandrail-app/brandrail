@@ -1,0 +1,15 @@
+{
+  "name": "brandrail-workspace",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "build": "pnpm --filter brandrail build",
+    "test": "pnpm --filter @brandrail/engine test",
+    "typecheck": "pnpm -r typecheck",
+    "mcpb": "node mcpb/build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "typescript": "5.9.3"
+  }
+}

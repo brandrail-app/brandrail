@@ -1,0 +1,92 @@
+{
+  "manifest_version": "0.3",
+  "name": "brandrail",
+  "display_name": "Brandrail",
+  "version": "0.10.1",
+  "description": "Design system guardrails for AI coding tools: tokens, components and a brand checker. Runs locally.",
+  "long_description": "Brandrail gives your AI coding tool your design system: colour, spacing and type tokens, your component registry, and a checker that flags hard-coded colours, off-scale spacing and raw HTML, with the fix. Runs on your machine; code is never uploaded. Without an API key it uses starter tokens. Add a key from Dashboard > Connect to load your organisation's Brand Kit. Inside a repo, `npx brandrail connect` is the recommended setup.",
+  "author": {
+    "name": "Brandrail",
+    "email": "hello@brandrail.com.au",
+    "url": "https://www.brandrail.com.au"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brandrail-app/brandrail"
+  },
+  "homepage": "https://www.brandrail.com.au",
+  "documentation": "https://www.brandrail.com.au/docs/connect",
+  "support": "https://github.com/brandrail-app/brandrail/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "server/brandrail.mjs",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/brandrail.mjs",
+        "mcp"
+      ],
+      "env": {
+        "BRANDRAIL_KEY": "${user_config.api_key}"
+      }
+    }
+  },
+  "user_config": {
+    "api_key": {
+      "type": "string",
+      "title": "Brandrail API key (optional)",
+      "description": "From Dashboard > Connect. Leave empty to try it with starter tokens.",
+      "sensitive": true,
+      "required": false
+    }
+  },
+  "tools": [
+    {
+      "name": "get_guidelines",
+      "description": "Design system rules for the project. Call once before writing UI."
+    },
+    {
+      "name": "get_design_tokens",
+      "description": "Every token with the CSS variable to use."
+    },
+    {
+      "name": "find_component",
+      "description": "Finds the component for a UI need, with import, rules and an example."
+    },
+    {
+      "name": "get_component_docs",
+      "description": "Full docs for one component in the project's framework."
+    },
+    {
+      "name": "get_template",
+      "description": "A whole page built from your components: the files to create and the page's rules."
+    },
+    {
+      "name": "get_migration_map",
+      "description": "Maps Material, MUI, Bootstrap, Ant, Chakra or PrimeNG to your components."
+    },
+    {
+      "name": "validate_snippet",
+      "description": "Checks generated UI code and returns a brand score and fixes."
+    }
+  ],
+  "keywords": [
+    "design-system",
+    "design-tokens",
+    "linter",
+    "frontend",
+    "ui"
+  ],
+  "license": "MIT",
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=18.18.0"
+    }
+  }
+}

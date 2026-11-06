@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.mcpb
+mcpb/build/
+key.pem
+*.pem
+.env
+.env.*
+.DS_Store

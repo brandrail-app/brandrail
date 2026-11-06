@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "brandrail": {
+      "command": "npx",
+      "args": ["-y", "brandrail", "mcp"]
+    }
+  }
+}
