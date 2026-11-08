@@ -4,22 +4,43 @@
   "title": "Brandrail",
   "description": "Design system guardrails for AI coding tools: tokens, components and a brand checker. Runs locally.",
   "websiteUrl": "https://www.brandrail.com.au/docs/connect",
+  "icons": [
+    {
+      "src": "https://www.brandrail.com.au/logo/brandrail-mark.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ]
+    },
+    {
+      "src": "https://www.brandrail.com.au/logo/brandrail-mark-512.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "512x512"
+      ]
+    }
+  ],
   "repository": {
     "url": "https://github.com/brandrail-app/brandrail",
     "source": "github",
     "subfolder": "packages/cli"
   },
-  "version": "0.10.1",
+  "version": "0.10.2",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "brandrail",
-      "version": "0.10.1",
+      "version": "0.10.2",
       "runtimeHint": "npx",
-      "transport": { "type": "stdio" },
+      "transport": {
+        "type": "stdio"
+      },
       "packageArguments": [
-        { "type": "positional", "value": "mcp" }
+        {
+          "type": "positional",
+          "value": "mcp"
+        }
       ],
       "environmentVariables": [
         {

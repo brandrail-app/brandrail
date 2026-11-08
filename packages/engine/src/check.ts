@@ -3,7 +3,7 @@ import { RULES } from "./rules.ts";
 import { fileFramework, fileKind, LineIndex, makeIgnore, SCANNABLE, stripComments } from "./source.ts";
 import type { BrandrailConfig, Report, Severity, SourceFile, Violation } from "./types.ts";
 
-export const ENGINE_VERSION = "0.10.0";
+export const ENGINE_VERSION = "0.10.2";
 
 const WEIGHT: Record<Severity, number> = { error: 4, warning: 1.5, info: 0.25 };
 

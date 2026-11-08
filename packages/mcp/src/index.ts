@@ -114,7 +114,15 @@ const text = (t: string) => ({ content: [{ type: "text" as const, text: t }] });
 
 export function createBrandrailMcp(ctx: McpContext): McpServer {
   const server = new McpServer(
-    { name: "brandrail", title: `Brandrail — ${ctx.org} design system`, version: ENGINE_VERSION },
+    {
+      name: "brandrail",
+      title: `Brandrail — ${ctx.org} design system`,
+      version: ENGINE_VERSION,
+      icons: [
+        { src: "https://www.brandrail.com.au/logo/brandrail-mark.svg", mimeType: "image/svg+xml", sizes: ["any"] },
+        { src: "https://www.brandrail.com.au/logo/brandrail-mark-512.png", mimeType: "image/png", sizes: ["512x512"] },
+      ],
+    },
     {
       instructions:
         `Design system for ${ctx.org}. Before writing UI: call get_guidelines once. For a new page or screen, start from get_template. Use find_component for every UI element ` +
