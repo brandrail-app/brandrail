@@ -1,3 +1,12 @@
+<p align="center">
+  <a href="https://www.brandrail.com.au">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://www.brandrail.com.au/logo/brandrail-logo-on-dark.svg">
+      <img alt="Brandrail" src="https://www.brandrail.com.au/logo/brandrail-logo-on-light.svg" height="48">
+    </picture>
+  </a>
+</p>
+
 # Brandrail
 
 Your design system, in every AI coding tool.
