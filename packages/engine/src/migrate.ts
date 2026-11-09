@@ -4,6 +4,9 @@ import { resolveUsage, type ResolvedUsage } from "./frameworks.ts";
 import type { FileKind } from "./source.ts";
 import type { ComponentEntry, Framework } from "./types.ts";
 
+/** A JavaScript identifier: what an import alias has to be before it goes into a RegExp. */
+const IDENT = /^[A-Za-z_$][\w$]{0,99}$/;
+
 /**
  * Migration from other UI libraries to the design system: what each library's pieces are (a "concept" such as
  * button or select), where they're used in code, and which registry component replaces them.
@@ -154,11 +157,12 @@ export function findLegacyUsages(code: string, kind: FileKind): LegacyUsage[] {
       if (m[1] && sub && lib.names[sub]) local.set(m[1], sub);
       for (const part of (m[2] ?? "").split(",")) {
         const [orig, alias] = part.trim().replace(/^type\s+/, "").split(/\s+as\s+/).map((s) => s.trim());
-        if (orig && lib.names[orig]) local.set(alias || orig, orig);
+        const name = alias || orig;
+        if (orig && lib.names[orig] && name && IDENT.test(name)) local.set(name, orig); // only real identifiers reach the RegExp below
       }
     }
     if (!local.size) continue;
-    const names = [...local.keys()].map((n) => n.replace(/\$/g, "\\$")).join("|");
+    const names = [...local.keys()].map((n) => n.replace(/\$/g, "\\$")).join("|"); // IDENT-only, so `$` is the one metacharacter left
     for (const m of matchAll(new RegExp(`<(${names})(?=[\\s/>])`, "g"), code)) {
       const orig = local.get(m[1]!)!;
       out.push({ offset: m.index, library: lib.id, what: `${LIBRARY_LABEL[lib.id].split(" ")[0]} <${orig}>`, concept: lib.names[orig]! });

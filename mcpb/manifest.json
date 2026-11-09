@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "brandrail",
   "display_name": "Brandrail",
-  "version": "0.10.2",
+  "version": "0.10.3",
   "description": "Design system guardrails for AI coding tools: tokens, components and a brand checker. Runs locally.",
   "long_description": "Brandrail gives your AI coding tool your design system: colour, spacing and type tokens, your component registry, and a checker that flags hard-coded colours, off-scale spacing and raw HTML, with the fix. Runs on your machine; code is never uploaded. Without an API key it uses starter tokens. Add a key from Dashboard > Connect to load your organisation's Brand Kit. Inside a repo, `npx brandrail connect` is the recommended setup.",
   "author": {

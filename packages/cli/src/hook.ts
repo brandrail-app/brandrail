@@ -1,6 +1,6 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { isAbsolute, join, relative } from "node:path";
+import { isAbsolute, join, relative, sep } from "node:path";
 
 /**
  * `brandrail hook install | uninstall`: a git pre-commit hook that checks only the staged lines and stops the commit
@@ -58,7 +58,8 @@ export function installHook(cwd: string, opts: { root: string; failBelow?: numbe
   // The hook runs from the repo root; the check must run where brandrail.config.json is.
   const top = git(["rev-parse", "--show-toplevel"], cwd) ?? cwd;
   const sub = relative(top, opts.root);
-  const cd = sub && !sub.startsWith("..") ? `cd "${sub}" && ` : "";
+  // Single quotes: a folder name can't run anything in the hook, whatever characters it has.
+  const cd = sub && !sub.startsWith("..") ? `cd '${sub.split(sep).join("/").replace(/'/g, `'\\''`)}' && ` : "";
   const cmd = `${cd}npx --yes brandrail check --staged --strict${opts.failBelow !== undefined ? ` --fail-below ${opts.failBelow}` : ""}`;
   const before = existsSync(where.path) ? readFileSync(where.path, "utf8") : "";
   mkdirSync(join(where.path, ".."), { recursive: true });

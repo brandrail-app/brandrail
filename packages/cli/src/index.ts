@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { strFromU8, unzipSync } from "fflate";
 import {
   check,
@@ -266,8 +266,28 @@ function tokensCssPath(root: string, config: BrandrailConfig, flags: Flags): str
   return existsSync(join(root, "src")) ? "src/brandrail.tokens.css" : "brandrail.tokens.css";
 }
 
+/**
+ * The tokens file must be a .css file inside the project. A cloned repo's config (or a reply from the server)
+ * can't make `init` write anywhere else, e.g. over ~/.bashrc, including through a symlink.
+ */
+export function safeTokensCssTarget(root: string, rel: string): string {
+  const fail = (why: string) => new Error(`Won't write the tokens file to "${rel}": ${why}. Set "tokensCss" in ${CONFIG_FILE} to a .css path inside this project.`);
+  if (!rel || isAbsolute(rel) || /^[a-z]:/i.test(rel) || rel.includes("\0")) throw fail("it has to be a relative path");
+  if (!/\.css$/i.test(rel)) throw fail("it has to end in .css");
+  const top = realpathSync(root);
+  const abs = resolve(top, rel);
+  const inside = (p: string) => p === top || p.startsWith(top + sep);
+  if (!inside(abs)) throw fail("it's outside the project");
+  // Follow whatever already exists on the way there: no folder or file on the path may lead out of the project.
+  let probe = abs;
+  while (!existsSync(probe) && dirname(probe) !== probe) probe = dirname(probe);
+  if (!inside(realpathSync(probe))) throw fail("it leads outside the project through a link");
+  if (existsSync(abs) && lstatSync(abs).isSymbolicLink()) throw fail("it's a link");
+  return abs;
+}
+
 function writeTokensCss(root: string, rel: string, config: BrandrailConfig, org?: string): boolean {
-  const abs = join(root, rel);
+  const abs = safeTokensCssTarget(root, rel);
   mkdirSync(dirname(abs), { recursive: true });
   const { css, usesKit } = tokensCssContent(config, org);
   writeFileSync(abs, css);

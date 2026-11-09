@@ -367,27 +367,69 @@ export function pagePath(url: string): string {
 
 /* ───────────────────────── URL safety (shared by hosted scanner and CLI) ───────────────────────── */
 
-/** True for loopback, private, link-local, CGNAT and other non-public addresses. */
+/** True for loopback, private, link-local, CGNAT and other non-public addresses. Anything it can't parse counts as private. */
 export function isPrivateAddress(ip: string): boolean {
-  const v = ip.toLowerCase().replace(/^\[|\]$/g, "");
+  const v = ip.trim().toLowerCase().replace(/^\[|\]$/g, "").replace(/%.*$/, "");
   if (v.includes(":")) {
-    if (v === "::" || v === "::1") return true;
-    const mapped = v.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-    if (mapped) return isPrivateAddress(mapped[1]!);
-    return /^(fc|fd|fe8|fe9|fea|feb|ff)/.test(v) || v.startsWith("64:ff9b:") || v.startsWith("2001:db8");
+    const b = ipv6Bytes(v);
+    if (!b) return true;
+    const zero = (from: number, to: number) => b.slice(from, to).every((x) => x === 0);
+    const v4 = (at: number) => isPrivateV4([b[at]!, b[at + 1]!, b[at + 2]!, b[at + 3]!]);
+    if (zero(0, 10) && b[10] === 0xff && b[11] === 0xff) return v4(12); // ::ffff:a.b.c.d (IPv4-mapped)
+    if (zero(0, 12)) return true; // ::, ::1 and the old IPv4-compatible ::a.b.c.d
+    if (zero(0, 8) && b[8] === 0xff && b[9] === 0xff && b[10] === 0 && b[11] === 0) return true; // ::ffff:0:a.b.c.d
+    if (b[0] === 0x00 && b[1] === 0x64 && b[2] === 0xff && b[3] === 0x9b) return true; // 64:ff9b::/96 and /48 (NAT64)
+    if (b[0] === 0x01 && b[1] === 0x00 && zero(2, 8)) return true; // 100::/64 (discard)
+    if (b[0] === 0x20 && b[1] === 0x01 && b[2] === 0x0d && b[3] === 0xb8) return true; // 2001:db8::/32 (documentation)
+    if (b[0] === 0x20 && b[1] === 0x01 && b[2] === 0x00 && b[3] === 0x00) return true; // 2001::/32 (Teredo, wraps IPv4)
+    if (b[0] === 0x20 && b[1] === 0x02) return v4(2); // 2002::/16 (6to4, wraps IPv4)
+    if ((b[0]! & 0xfe) === 0xfc) return true; // fc00::/7 unique local
+    if (b[0] === 0xfe && (b[1]! & 0xc0) === 0x80) return true; // fe80::/10 link-local
+    if (b[0] === 0xfe && (b[1]! & 0xc0) === 0xc0) return true; // fec0::/10 site-local
+    if (b[0] === 0xff) return true; // multicast
+    return false;
   }
+  if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(v)) return true;
   const p = v.split(".").map(Number);
-  if (p.length !== 4 || p.some((x) => !Number.isInteger(x) || x < 0 || x > 255)) return true;
-  const [a, b] = p as [number, number, number, number];
+  if (p.some((x) => x > 255)) return true;
+  return isPrivateV4(p as [number, number, number, number]);
+}
+
+function isPrivateV4([a, b]: number[]): boolean {
   return (
-    a === 0 || a === 10 || a === 127 || a >= 224 ||
-    (a === 100 && b >= 64 && b <= 127) ||
+    a === 0 || a === 10 || a === 127 || a! >= 224 ||
+    (a === 100 && b! >= 64 && b! <= 127) ||
     (a === 169 && b === 254) ||
-    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 172 && b! >= 16 && b! <= 31) ||
     (a === 192 && b === 168) ||
     (a === 192 && b === 0) ||
     (a === 198 && (b === 18 || b === 19))
   );
+}
+
+/** 16 bytes for an IPv6 address in any spelling (hex groups, `::`, a dotted IPv4 tail), or null. */
+function ipv6Bytes(v: string): number[] | null {
+  let s = v;
+  const dotted = /(?:^|:)(\d{1,3}(?:\.\d{1,3}){3})$/.exec(s);
+  if (dotted) {
+    const p = dotted[1]!.split(".").map(Number);
+    if (p.some((x) => x > 255)) return null;
+    s = s.slice(0, s.length - dotted[1]!.length) + `${((p[0]! << 8) | p[1]!).toString(16)}:${((p[2]! << 8) | p[3]!).toString(16)}`;
+  }
+  const halves = s.split("::");
+  if (halves.length > 2) return null;
+  const parse = (h: string) => (h === "" ? [] : h.split(":"));
+  const head = parse(halves[0]!);
+  const rest = halves.length === 2 ? parse(halves[1]!) : [];
+  if (halves.length === 1 ? head.length !== 8 : head.length + rest.length > 7) return null;
+  const groups = [...head, ...Array(8 - head.length - rest.length).fill("0"), ...rest];
+  const out: number[] = [];
+  for (const g of groups) {
+    if (!/^[0-9a-f]{1,4}$/.test(g)) return null;
+    const n = parseInt(g, 16);
+    out.push(n >> 8, n & 0xff);
+  }
+  return out;
 }
 
 /** Display title for any rule id, code or rendered. */

@@ -333,7 +333,7 @@ export const preferOfficialComponent: Rule = {
       const usage = resolveUsage(comp, framework);
       if (!usage) continue;
       // Skip the component's own implementation file
-      if (new RegExp(`(?:function|const|class)\\s+${comp.name}\\b`).test(code)) continue;
+      if (new RegExp(`(?:function|const|class)\\s+${escapeRe(comp.name)}\\b`).test(code)) continue;
       if (framework !== "react" && implementsTag(code, usage.tag)) continue;
       out.push({
         offset: m.index,
@@ -345,7 +345,12 @@ export const preferOfficialComponent: Rule = {
   },
 };
 
-const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** A JavaScript identifier: what an import alias has to be before it goes into a RegExp. */
+const IDENT = /^[A-Za-z_$][\w$]{0,99}$/;
 
 /** The file that defines the selector / custom element itself (it has to use the raw element). */
 const implementsTag = (code: string, tag: string) =>
@@ -413,7 +418,8 @@ function importedComponents(code: string, components: ComponentEntry[]): Map<str
       const [orig, alias] = part.trim().replace(/^type\s+/, "").split(/\s+as\s+/).map((s) => s.trim());
       if (!orig) continue;
       const comp = components.find((c) => c.name === orig && c.importPath === from && c.props?.length);
-      if (comp) out.set(alias || orig, comp);
+      const name = alias || orig;
+      if (comp && IDENT.test(name)) out.set(name, comp); // only real identifiers reach a RegExp
     }
   }
   return out;
@@ -634,7 +640,7 @@ export const componentProps: Rule = {
     const imported = importedComponents(code, config.components);
     if (imported.size === 0) return [];
     const out: Finding[] = [];
-    const names = [...imported.keys()].map((n) => n.replace(/[$]/g, "\\$")).join("|");
+    const names = [...imported.keys()].map(escapeRe).join("|");
     for (const m of matches(new RegExp(`<(${names})(?=[\\s/>])`, "g"), code)) {
       if (/[\w)\]]\s*$/.test(code.slice(Math.max(0, m.index - 20), m.index))) continue; // generics / comparisons
       const comp = imported.get(m[1]!)!;
@@ -740,8 +746,8 @@ export const deprecatedComponent: Rule = {
         for (const part of m[1]!.split(",")) {
           const [orig, alias] = part.trim().replace(/^type\s+/, "").split(/\s+as\s+/).map((s) => s.trim());
           const c = dep.find((x) => x.name === orig && x.importPath === m[3]);
-          if (!c) continue;
-          const local = (alias || orig)!.replace(/[$]/g, "\\$");
+          if (!c || !IDENT.test(alias || orig || "")) continue;
+          const local = escapeRe((alias || orig)!);
           let used = false;
           for (const u of matches(new RegExp(`<${local}(?=[\\s/>])`, "g"), code)) {
             used = true;

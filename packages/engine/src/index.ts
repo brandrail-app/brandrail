@@ -18,6 +18,7 @@ export {
   fromFigmaStyles,
   fromModeObject,
   flattenTokens,
+  safeTokenValue,
   buildDtcg,
   diffTokens,
   mergeTokens,

@@ -1,7 +1,7 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { apiBase } from "./api.ts";
+import { apiBase, envKeyAllowed } from "./api.ts";
 
 /**
  * API keys from `brandrail connect` live outside every repo, readable only by you:
@@ -67,7 +67,10 @@ export function removeCredential(): boolean {
 
 /** BRANDRAIL_KEY, else the key saved by `brandrail connect` for this Brandrail URL. */
 export function resolveKey(): string | undefined {
-  if (process.env.BRANDRAIL_KEY) return process.env.BRANDRAIL_KEY;
+  if (process.env.BRANDRAIL_KEY) {
+    if (!envKeyAllowed()) throw new Error(`BRANDRAIL_KEY is only sent to Brandrail (or localhost), not ${apiBase()}. Unset BRANDRAIL_API_URL, or sign in to that server with \`npx brandrail connect\`.`);
+    return process.env.BRANDRAIL_KEY;
+  }
   const c = storedCredential();
   if (c && Date.parse(c.expiresAt) > Date.now()) return c.key;
   return undefined;

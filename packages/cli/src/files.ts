@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileKind, makeIgnore, type BrandrailConfig, type SourceFile } from "@brandrail/engine";
 
@@ -11,14 +11,17 @@ export function collectFiles(root: string, paths: string[], ignoreGlobs: string[
   const out: SourceFile[] = [];
   const rel = (p: string) => relative(root, p).split(sep).join("/");
 
-  const visit = (abs: string) => {
+  // Paths you name are followed; links found while walking are skipped, so a repo can't point the check
+  // (and its report) at files outside it, or loop forever.
+  const visit = (abs: string, named = false) => {
     const r = rel(abs);
     let st;
     try {
-      st = statSync(abs);
+      st = named ? statSync(abs) : lstatSync(abs);
     } catch {
       return;
     }
+    if (st.isSymbolicLink()) return;
     if (st.isDirectory()) {
       const name = abs.split(sep).pop() ?? "";
       if (r && (ignored(`${r}/`) || ignored(`${r}/x`) || (name.startsWith(".") && name !== "." && name !== ".github"))) return;
@@ -30,7 +33,7 @@ export function collectFiles(root: string, paths: string[], ignoreGlobs: string[
     out.push({ path: r, content: readFileSync(abs, "utf8") });
   };
 
-  for (const p of paths.length ? paths : ["."]) visit(resolve(root, p));
+  for (const p of paths.length ? paths : ["."]) visit(resolve(root, p), true);
   return out;
 }
 

@@ -3,7 +3,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { hostname, userInfo } from "node:os";
 import { basename, join } from "node:path";
-import { apiBase } from "./api.ts";
+import { apiBase, sameOriginUrl } from "./api.ts";
 import { saveCredential } from "./credentials.ts";
 
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
@@ -23,8 +23,9 @@ export function generateKey(): { key: string; prefix: string; hash: string } {
 }
 
 function openBrowser(url: string): void {
+  // No shell anywhere: Windows hands the URL straight to the default browser instead of going through cmd.
   const [cmd, args] =
-    process.platform === "darwin" ? ["open", [url]] : process.platform === "win32" ? ["cmd", ["/c", "start", "", url.replace(/&/g, "^&")]] : ["xdg-open", [url]];
+    process.platform === "darwin" ? ["open", [url]] : process.platform === "win32" ? ["rundll32", ["url.dll,FileProtocolHandler", url]] : ["xdg-open", [url]];
   execFile(cmd, args, () => undefined);
 }
 
@@ -58,14 +59,16 @@ export async function connect(opts: { browser: boolean; log: (s?: string) => voi
   });
   const s = await json<{ id: string; userCode: string; verificationUrl: string; expiresAt: string }>(res);
   if (!res.ok) throw new Error(`Couldn't start sign-in: ${s.error ?? res.status}`);
+  const verificationUrl = sameOriginUrl(s.verificationUrl);
+  if (!verificationUrl || !/^[A-Z0-9-]{4,16}$/i.test(String(s.userCode))) throw new Error(`Couldn't start sign-in: ${apiBase()} sent an unexpected reply.`);
 
   opts.log("");
   opts.log(`  Your code:  ${s.userCode}`);
   opts.log("");
-  opts.log(`  Approve it at ${s.verificationUrl}`);
-  opts.log("  Check the browser shows the same code before you approve.");
+  opts.log(`  Open ${verificationUrl} and type the code there.`);
+  opts.log("  Only approve a code you started yourself.");
   opts.log("");
-  if (opts.browser) openBrowser(s.verificationUrl);
+  if (opts.browser) openBrowser(verificationUrl);
 
   const deadline = Date.parse(s.expiresAt) || Date.now() + 10 * 60_000;
   let wait = 2000;

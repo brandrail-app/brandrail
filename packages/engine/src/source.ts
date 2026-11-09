@@ -136,31 +136,105 @@ export class LineIndex {
   }
 }
 
-/** Minimal glob matcher: supports **, *, ? and {a,b}. Paths use forward slashes. */
-export function globToRegExp(glob: string): RegExp {
-  let re = "";
+type GlobTok = { t: "lit"; c: string } | { t: "any" } | { t: "star" } | { t: "globstar" } | { t: "dirs" };
+
+/** Expands {a,b} (nested too) into plain globs; a brace with no closing `}` is literal. */
+function expandBraces(glob: string, out: string[] = []): string[] {
+  if (out.length > 64) return out;
+  let depth = 0;
+  let open = -1;
+  for (let i = 0; i < glob.length; i++) {
+    if (glob[i] === "{") {
+      if (depth++ === 0) open = i;
+    } else if (glob[i] === "}" && depth > 0 && --depth === 0) {
+      const parts: string[] = [];
+      let d = 0;
+      let from = open + 1;
+      for (let j = open + 1; j < i; j++) {
+        if (glob[j] === "{") d++;
+        else if (glob[j] === "}") d--;
+        else if (glob[j] === "," && d === 0) {
+          parts.push(glob.slice(from, j));
+          from = j + 1;
+        }
+      }
+      parts.push(glob.slice(from, i));
+      for (const p of parts) expandBraces(glob.slice(0, open) + p + glob.slice(i + 1), out);
+      return out;
+    }
+  }
+  out.push(glob);
+  return out;
+}
+
+function tokenize(glob: string): GlobTok[] {
+  const toks: GlobTok[] = [];
   for (let i = 0; i < glob.length; i++) {
     const c = glob[i]!;
-    if (c === "*") {
-      if (glob[i + 1] === "*") {
-        const slash = glob[i + 2] === "/";
-        re += slash ? "(?:.*/)?" : ".*";
-        i += slash ? 2 : 1;
-      } else re += "[^/]*";
-    } else if (c === "?") re += "[^/]";
-    else if (c === "{") {
-      const end = glob.indexOf("}", i);
-      re += `(?:${glob.slice(i + 1, end).split(",").map((s) => s.replace(/[.+^$()|[\]\\]/g, "\\$&")).join("|")})`;
-      i = end;
-    } else re += c.replace(/[.+^$()|[\]\\]/g, "\\$&");
+    if (c === "*" && glob[i + 1] === "*") {
+      while (glob[i + 1] === "*") i++;
+      if (glob[i + 1] === "/") {
+        i++;
+        toks.push({ t: "dirs" }); // **/ : zero or more whole folders
+      } else toks.push({ t: "globstar" });
+    } else if (c === "*") toks.push({ t: "star" });
+    else if (c === "?") toks.push({ t: "any" });
+    else toks.push({ t: "lit", c });
   }
-  return new RegExp(`^${re}$`);
+  return toks;
+}
+
+/** Matches without backtracking (memoised, at most tokens × path length steps), so no glob can make it slow. */
+function matchTokens(toks: GlobTok[], path: string): boolean {
+  const n = path.length;
+  const seen = new Uint8Array((toks.length + 1) * (n + 1));
+  const stack: Array<[number, number]> = [[0, 0]];
+  while (stack.length) {
+    const [ti, pi] = stack.pop()!;
+    const key = ti * (n + 1) + pi;
+    if (seen[key]) continue;
+    seen[key] = 1;
+    if (ti === toks.length) {
+      if (pi === n) return true;
+      continue;
+    }
+    const tok = toks[ti]!;
+    const ch = path[pi];
+    switch (tok.t) {
+      case "lit":
+        if (ch === tok.c) stack.push([ti + 1, pi + 1]);
+        break;
+      case "any":
+        if (ch !== undefined && ch !== "/") stack.push([ti + 1, pi + 1]);
+        break;
+      case "star":
+        stack.push([ti + 1, pi]);
+        if (ch !== undefined && ch !== "/") stack.push([ti, pi + 1]);
+        break;
+      case "globstar":
+        stack.push([ti + 1, pi]);
+        if (ch !== undefined) stack.push([ti, pi + 1]);
+        break;
+      case "dirs":
+        stack.push([ti + 1, pi]); // no folders
+        for (let j = pi; j < n; j++) if (path[j] === "/") stack.push([ti + 1, j + 1]); // through any later slash
+        break;
+    }
+  }
+  return false;
+}
+
+/** Minimal glob matcher: supports **, *, ? and {a,b}. Paths use forward slashes. */
+export function globMatcher(glob: string): (path: string) => boolean {
+  if (glob.length > 1000) return () => false;
+  const alts = expandBraces(glob).slice(0, 64).map(tokenize);
+  return (path) => path.length <= 4096 && alts.some((t) => matchTokens(t, path));
 }
 
 export function makeIgnore(globs: string[]) {
-  const res = globs.map(globToRegExp);
+  const res = globs.map(globMatcher);
   return (path: string) => {
     const p = path.replace(/\\/g, "/").replace(/^\.\//, "");
-    return res.some((r) => r.test(p) || r.test(`/${p}`));
+    return res.some((m) => m(p) || m(`/${p}`));
   };
 }

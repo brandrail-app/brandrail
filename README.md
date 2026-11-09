@@ -34,6 +34,10 @@ npx brandrail connect
 It signs you in through the browser and writes the MCP config and rule files for Claude Code, Cursor,
 Copilot, Codex, Windsurf and Gemini CLI. The files it writes hold no key, so commit them.
 
+You type the code it shows on the Brandrail page, so nobody can approve a terminal for you with a link. The
+key is made on your machine (only its hash is sent) and saved outside the repo. To help you recognise the
+request, the terminal's description (`user@computer · folder`) is shown on the approval page.
+
 Or add the MCP server by hand (works without an account):
 
 ```json
@@ -52,6 +56,9 @@ cursor://anysphere.cursor-deeplink/mcp/install?name=brandrail&config=eyJjb21tYW5
 
 Set `BRANDRAIL_KEY` (an API key from Dashboard → Connect) to load your organisation's Brand Kit without
 running `connect`. Full docs: https://www.brandrail.com.au/docs/connect
+
+`BRANDRAIL_KEY` is only ever sent to www.brandrail.com.au (or localhost). If `BRANDRAIL_API_URL` points
+anywhere else, the CLI says so on every run and won't send the key; sign in to that server with `connect`.
 
 ## MCP tools
 

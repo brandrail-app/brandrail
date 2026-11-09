@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { check, checkSnippet, computeScore, findComponentByName, findComponents, formatGithubAnnotations, formatMarkdown, generateInstructions, resolveConfig, starterConfig } from "../src/index.ts";
-import { globToRegExp, stripComments } from "../src/source.ts";
+import { globMatcher, stripComments } from "../src/source.ts";
 
 const cfg = starterConfig;
 const ids = (code: string, file = "src/App.tsx") => checkSnippet(code, file, cfg).violations.map((v) => v.ruleId);
@@ -155,10 +155,10 @@ test("stripComments keeps offsets and leaves strings alone", () => {
 });
 
 test("glob matcher", () => {
-  assert.ok(globToRegExp("**/node_modules/**").test("a/node_modules/b/c.js"));
-  assert.ok(globToRegExp("**/*.stories.*").test("src/Button.stories.tsx"));
-  assert.ok(globToRegExp("src/{legacy,old}/**").test("src/old/x.tsx"));
-  assert.ok(!globToRegExp("src/*.tsx").test("src/a/b.tsx"));
+  assert.ok(globMatcher("**/node_modules/**")("a/node_modules/b/c.js"));
+  assert.ok(globMatcher("**/*.stories.*")("src/Button.stories.tsx"));
+  assert.ok(globMatcher("src/{legacy,old}/**")("src/old/x.tsx"));
+  assert.ok(!globMatcher("src/*.tsx")("src/a/b.tsx"));
 });
 
 test("findComponents ranks by name, aliases, synonyms and description", () => {

@@ -73,6 +73,16 @@ test("private addresses are refused", () => {
   for (const ip of ["8.8.8.8", "76.76.21.21", "2606:4700::1111"]) assert.ok(!isPrivateAddress(ip), ip);
 });
 
+test("private addresses are refused in every IPv6 spelling the URL parser produces", () => {
+  const host = (u: string) => new URL(u).hostname;
+  for (const ip of [
+    host("http://[::ffff:127.0.0.1]/"), host("http://[::ffff:169.254.169.254]/"), host("http://[::127.0.0.1]/"),
+    "::ffff:7f00:1", "0:0:0:0:0:ffff:7f00:1", "::7f00:1", "::ffff:0:7f00:1", "64:ff9b::a9fe:a9fe", "2002:7f00:1::",
+    "2001:0:1::", "2001:db8::1", "fec0::1", "ff02::1", "::", "fe80::1%eth0", "not-an-ip", "1::2::3", "1:2:3:4:5:6:7:8:9", "0177.0.0.1",
+  ]) assert.ok(isPrivateAddress(ip), ip);
+  for (const ip of [host("http://[::ffff:8.8.8.8]/"), "2002:808:808::", "2a00:1450:4001:80b::200e"]) assert.ok(!isPrivateAddress(ip), ip);
+});
+
 test("collector runs in a real browser", async (t) => {
   let pw: typeof import("playwright-core");
   try {

@@ -195,6 +195,10 @@ export function classify(
 
 type Raw = { path: string; type?: string; value: unknown; description?: string; dark?: unknown };
 
+/** Keys that would reach Object.prototype when a token path is written into a plain object. */
+const UNSAFE_KEYS = new Set(["__proto__", "prototype", "constructor"]);
+const safePath = (path: string) => path.split(".").every((p) => !UNSAFE_KEYS.has(p));
+
 function rawLeaves(node: unknown, prefix: string, out: Raw[], studio: boolean, inherited?: string) {
   if (!node || typeof node !== "object" || Array.isArray(node)) return;
   const o = node as Record<string, unknown>;
@@ -211,7 +215,7 @@ function rawLeaves(node: unknown, prefix: string, out: Raw[], studio: boolean, i
     });
     return;
   }
-  for (const [k, v] of Object.entries(o)) if (!k.startsWith("$")) rawLeaves(v, prefix ? `${prefix}.${k}` : k, out, studio, groupType);
+  for (const [k, v] of Object.entries(o)) if (!k.startsWith("$") && !UNSAFE_KEYS.has(k)) rawLeaves(v, prefix ? `${prefix}.${k}` : k, out, studio, groupType);
 }
 
 const REF = /^\{([^}]+)\}$/;
@@ -247,11 +251,24 @@ const TYPE_KIND: Record<string, "color" | "number" | "string"> = {
   fontweight: "string",
 };
 
-/** Flattens a DTCG (or Tokens Studio) doc. Keeps paths as they are; aliases are resolved. */
+/**
+ * Token paths and values end up inside generated CSS, Swift, Kotlin, Dart and TypeScript. Anything that could
+ * close a declaration, a string or a comment there is dropped here, once, for every exporter.
+ */
+const SAFE_PATH = /^[\p{L}\p{N}_. -]{1,200}$/u;
+const UNSAFE_VALUE = /[;{}<>\\`$]|\/\*|\*\/|[\u0000-\u001f\u007f\u2028\u2029]/;
+const SAFE_FONT = /^[\p{L}\p{N} ,._'"&-]{1,300}$/u;
+export function safeTokenValue(type: string, value: string): boolean {
+  if (value.length > 1000 || UNSAFE_VALUE.test(value)) return false;
+  return type !== "fontFamily" || SAFE_FONT.test(value);
+}
+
+/** Flattens a DTCG (or Tokens Studio) doc. Keeps paths as they are; aliases are resolved. Unsafe paths and values are skipped. */
 export function flattenTokens(doc: unknown): FlatToken[] {
   const raws = resolveRefs(collectRaw(doc).raws);
   const out: FlatToken[] = [];
   for (const r of raws) {
+    if (!SAFE_PATH.test(r.path)) continue;
     const t = (r.type ?? "").toLowerCase().replace(/[^a-z]/g, "");
     if (t === "color" || (!t && r.path.startsWith("color"))) {
       const v = colorValue(r.value);
@@ -261,7 +278,9 @@ export function flattenTokens(doc: unknown): FlatToken[] {
     } else if (typeof r.value === "string" || typeof r.value === "number" || (r.value && typeof r.value === "object" && "unit" in (r.value as object))) {
       const type: TokenType =
         typeof r.value === "object" ? "dimension" : t === "fontfamily" || t === "fontfamilies" ? "fontFamily" : t === "fontweight" || t === "fontweights" ? "fontWeight" : TYPE_KIND[t] === "number" ? "dimension" : t === "number" ? "number" : /^font\.family\./.test(r.path) ? "fontFamily" : typeof r.value === "number" ? "number" : /px$|rem$/.test(String(r.value)) ? "dimension" : "string";
-      out.push({ path: r.path, type, value: type === "dimension" ? dim(r.value) : String(r.value), ...(r.description ? { description: r.description } : {}) });
+      const value = type === "dimension" ? dim(r.value) : String(r.value);
+      if (!safeTokenValue(type, value)) continue;
+      out.push({ path: r.path, type, value, ...(r.description ? { description: r.description } : {}) });
     }
   }
   return out;
@@ -322,6 +341,7 @@ function hasLeafAtTop(node: unknown): boolean {
 export function buildDtcg(tokens: FlatToken[]): DtcgDoc {
   const tree: DtcgDoc = {};
   for (const t of tokens) {
+    if (!safePath(t.path)) continue;
     const parts = t.path.split(".");
     let node = tree as Record<string, unknown>;
     parts.forEach((p, i) => {
