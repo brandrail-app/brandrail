@@ -412,7 +412,8 @@ async function cmdInit(cwd: string, flags: Flags): Promise<number> {
     log(`✔ wrote ${css}  (the Brand Kit as CSS variables${kit ? ", and @brandrail/kit themed from it" : ""} — import it once at your app entry)`);
   }
   if (flags.rules !== false) for (const f of writeRuleFiles(cwd, config, org, css)) log(`✔ updated ${f}`);
-  if (flags.mcp) writeMcpConfigs(cwd, framework);
+  // Local (stdio) by default, like `connect`: works without an account and keeps code on the machine.
+  if (flags.mcp) writeMcpConfigs(cwd, framework, flags.remote ? "remote" : "local");
   log("\nNext: npx brandrail check");
   return 0;
 }

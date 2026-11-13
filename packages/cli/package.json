@@ -1,6 +1,6 @@
 {
   "name": "brandrail",
-  "version": "0.10.3",
+  "version": "0.10.4",
   "mcpName": "au.com.brandrail/brandrail",
   "description": "Keep AI-generated UI on-brand: an MCP server and CLI that give Claude Code, Cursor, Copilot and Codex your design system, and check code and live pages against it.",
   "keywords": [

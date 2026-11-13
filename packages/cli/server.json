@@ -25,13 +25,13 @@
     "source": "github",
     "subfolder": "packages/cli"
   },
-  "version": "0.10.3",
+  "version": "0.10.4",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "brandrail",
-      "version": "0.10.3",
+      "version": "0.10.4",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
