@@ -1,0 +1,17 @@
+{
+  "name": "@brandrail/github-action",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Brandrail GitHub Action. dist/ is committed so the action runs without an install step.",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --format=esm --outfile=dist/index.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@brandrail/engine": "workspace:*",
+    "@types/node": "^22",
+    "esbuild": "^0.28.2",
+    "typescript": "5.9.3"
+  }
+}
