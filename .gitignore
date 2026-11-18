@@ -1,5 +1,7 @@
 node_modules/
 dist/
+# The GitHub Action runs its committed bundle (no install step on the runner), so it must be in the repo.
+!packages/github-action/dist/
 *.mcpb
 mcpb/build/
 key.pem
