@@ -16,7 +16,7 @@ test("resolves tokens into colours, spacing, radii and fonts", () => {
   assert.deepEqual(r.radii.filter((x) => x < 999), [0, 3, 6, 12]);
   assert.equal(r.fonts[0], "-apple-system");
   assert.equal(r.replaces.get("button")?.name, "Button");
-  assert.equal(r.replaces.get("input")?.name, "TextInput");
+  assert.equal(r.replaces.get("input")?.name, "InputText");
 });
 
 test("no-hardcoded-color: off-palette colour is an error with closest token", () => {
@@ -76,7 +76,17 @@ test("prefer-official-component: raw elements, but not hidden inputs or the comp
   assert.equal(only(`<button onClick={go}>Save</button>`, "prefer-official-component").length, 1);
   assert.equal(only(`<input type="hidden" name="x" />`, "prefer-official-component").length, 0);
   assert.equal(only(`export function Button(){ return <button /> }`, "prefer-official-component").length, 0);
-  assert.match(only(`<textarea />`, "prefer-official-component")[0]!.suggestion!, /Textarea/);
+  assert.equal(only(`<textarea />`, "prefer-official-component")[0]!.suggestion, 'import { InputTextArea } from "@brandrail/kit"');
+});
+
+test("the starter points at the Brandrail kit: an npm import in React, <br-*> elements elsewhere", () => {
+  assert.equal(only(`<button>Save</button>`, "prefer-official-component")[0]!.suggestion, 'import { Button } from "@brandrail/kit"');
+  assert.equal(checkSnippet(`<button>Save</button>`, "a.html", cfg).violations.find((v) => v.ruleId === "prefer-official-component")?.suggestion, "Use <br-button>");
+  assert.equal(
+    checkSnippet(`<button>Save</button>`, "a.component.html", cfg).violations.find((v) => v.ruleId === "prefer-official-component")?.suggestion,
+    'Use <br-button> (import "@brandrail/kit/elements";)',
+  );
+  assert.ok(!(starterConfig.components ?? []).some((c) => c.importPath.includes("acme")), "no placeholder package in the starter");
 });
 
 test("forbidden-import and img-alt", () => {
@@ -184,7 +194,8 @@ test("findComponents ranks by name, aliases, synonyms and description", () => {
 
 test("generateInstructions lists components, tokens and the validate step", () => {
   const md = generateInstructions(starterConfig, { org: "Acme" });
-  assert.match(md, /`Button` from `@acme\/ui` \(instead of <button>\)/);
+  assert.match(md, /`Button` from `@brandrail\/kit` \(instead of <button>/);
+  assert.match(md, /npm i @brandrail\/kit/);
   assert.match(md, /var\(--color-action-primary\)/);
   assert.match(md, /validate_snippet/);
 });

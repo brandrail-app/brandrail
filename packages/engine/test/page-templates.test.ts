@@ -77,14 +77,25 @@ test("Plain HTML loads the kit and wires state with listeners", { skip: kitSkip 
   assert.match(html, /getElementById\("save"\)\.addEventListener\("br-click"/);
 });
 
+// An organisation's own library (not the kit): templates must use it, never swap in another one.
+const orgConfig: BrandrailConfig = {
+  ...starterConfig,
+  components: [
+    { name: "Button", importPath: "@acme/ui", replaces: ["button"] },
+    { name: "TextInput", importPath: "@acme/ui", replaces: ["input"] },
+    { name: "Select", importPath: "@acme/ui", replaces: ["select"] },
+    { name: "Textarea", importPath: "@acme/ui", replaces: ["textarea"] },
+  ],
+};
+
 test("an org's own components fill the parts; missing ones get a comment, never another library", () => {
-  const r = renderTemplate(starterConfig, findTemplate("sign-in")!, "react");
+  const r = renderTemplate(orgConfig, findTemplate("sign-in")!, "react");
   const tsx = r.files[0]!.content;
   assert.match(tsx, /import \{ Button, TextInput \} from "@acme\/ui";/);
   assert.match(tsx, /<TextInput label="Email"/);
   assert.match(tsx, /\{\/\* Form: no Card in your registry for React\./);
   assert.ok(!/theme="brandrail"/.test(tsx), "kit-only props stay off other components");
-  const md = templateMarkdown(starterConfig, findTemplate("sign-in")!, "react", "Acme");
+  const md = templateMarkdown(orgConfig, findTemplate("sign-in")!, "react", "Acme");
   assert.match(md, /1 part has no component in the registry/);
 });
 

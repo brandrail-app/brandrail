@@ -28,11 +28,36 @@ export const starterConfig: BrandrailConfig = {
     radius: { md: { $type: "dimension", $value: "6px" } },
     space: { unit: { $type: "dimension", $value: "8px" } },
   },
+  // The Brandrail kit on npm, so every suggestion is a real import. Angular, Vue and plain HTML use the same kit as
+  // custom elements (<br-button>…), registered by one import of @brandrail/kit/elements.
   components: [
-    { name: "Button", importPath: "@acme/ui" },
-    { name: "TextInput", importPath: "@acme/ui" },
-    { name: "Select", importPath: "@acme/ui" },
-    { name: "Textarea", importPath: "@acme/ui" },
+    {
+      name: "Button",
+      importPath: "@brandrail/kit",
+      replaces: ["button", "input[type=submit]", "input[type=button]"],
+      frameworks: { "web-components": { importPath: "@brandrail/kit/elements", tag: "br-button" } },
+    },
+    {
+      name: "InputText",
+      importPath: "@brandrail/kit",
+      replaces: ["input"],
+      aliases: ["TextInput", "TextField", "Input"],
+      frameworks: { "web-components": { importPath: "@brandrail/kit/elements", tag: "br-input-text" } },
+    },
+    {
+      name: "Dropdown",
+      importPath: "@brandrail/kit",
+      replaces: ["select"],
+      aliases: ["Select"],
+      frameworks: { "web-components": { importPath: "@brandrail/kit/elements", tag: "br-dropdown" } },
+    },
+    {
+      name: "InputTextArea",
+      importPath: "@brandrail/kit",
+      replaces: ["textarea"],
+      aliases: ["Textarea"],
+      frameworks: { "web-components": { importPath: "@brandrail/kit/elements", tag: "br-input-text-area" } },
+    },
   ],
   rules: {},
   ignore: [],

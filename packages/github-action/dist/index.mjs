@@ -1544,7 +1544,7 @@ function makeIgnore(globs) {
 }
 
 // ../engine/src/check.ts
-var ENGINE_VERSION = "0.10.5";
+var ENGINE_VERSION = "0.10.6";
 var WEIGHT = { error: 4, warning: 1.5, info: 0.25 };
 function computeScore(counts, lines) {
   const penalty = counts.error * WEIGHT.error + counts.warning * WEIGHT.warning + counts.info * WEIGHT.info;
